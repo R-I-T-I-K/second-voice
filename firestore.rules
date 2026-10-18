@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The browser only ever reads. All writes come from the Cloud Run services
+    // through the Admin SDK, which bypasses these rules.
+    match /banks/{bank}/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

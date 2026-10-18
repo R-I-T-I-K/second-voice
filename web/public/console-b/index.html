@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bank B · Receiver console</title><link rel="stylesheet" href="/shared/style.css"></head>
+<body>
+<header class="top"><span class="tag">Second Voice</span><h1>Bank B · receiving bank</h1>
+  <nav><a href="/">Home</a><a href="/app">Phone</a><a href="/console-a">Console A</a></nav></header>
+<main><div class="grid">
+  <div class="card"><h2>Own accounts · mule score and shared band</h2>
+    <p class="muted" style="margin:0 0 8px;font-size:.88rem">Scored on Bank B's own data: account age, KYC depth, first-time inflows in 24 h, minutes until money leaves. Bank A only ever receives the band.</p>
+    <div style="overflow:auto"><table><thead><tr><th>VPA</th><th>Holder</th><th>Opened</th><th>KYC</th><th>First-time inflows 24h</th><th>Median min to sweep</th><th>Score</th><th>Band</th></tr></thead><tbody id="accts"></tbody></table></div></div>
+  <div class="card"><h2>Held credits</h2>
+    <div style="overflow:auto"><table><thead><tr><th>Time</th><th>To</th><th>Amount</th><th>From</th><th>Reason</th><th>Release at</th><th>Status</th><th></th></tr></thead><tbody id="holds"></tbody></table></div></div>
+  <div class="card"><h2>Event stream</h2><div class="stream" id="events"></div></div>
+</div></main>
+<script src="/shared/config.js"></script>
+<script type="module">
+import { ready, api, bankCol, onSnapshot, query, orderBy, limit, inr, when, esc } from "/shared/firebase.js";
+const $ = (id) => document.getElementById(id);
+await ready;
+onSnapshot(query(bankCol("B", "accounts"), orderBy("mule_score", "desc")), (snap) => {
+  $("accts").innerHTML = snap.docs.map((d) => { const a = d.data(), f = a.features || {}; return `<tr>
+    <td class="mono">${esc(a.vpa)}</td><td>${esc(a.name)}</td><td class="num">${f.account_age_days ?? "?"} d ago</td><td>${esc(a.kyc_level)}</td>
+    <td class="num">${a.first_time_inflows_24h ?? 0}</td><td class="num">${a.median_minutes_to_sweep ?? "stays"}</td>
+    <td class="num">${a.mule_score}</td><td><span class="pill ${esc(a.band)}">${esc(a.band)}</span></td></tr>`; }).join("");
+});
+onSnapshot(query(bankCol("B", "holds"), orderBy("created_at", "desc"), limit(40)), (snap) => {
+  $("holds").innerHTML = snap.docs.map((d) => { const h = d.data(); return `<tr>
+    <td class="num">${when(h.created_at)}</td><td class="mono">${esc(h.vpa)}</td><td class="num">${inr(h.amount)}</td><td>Bank ${esc(h.from_bank)}</td>
+    <td>${esc(h.reason)}</td><td class="num">${h.release_at?.toDate ? h.release_at.toDate().toLocaleString("en-IN") : ""}</td><td>${esc(h.status)}</td>
+    <td>${h.status === "held" ? `<button data-id="${d.id}">Release</button>` : ""}</td></tr>`; }).join("") || '<tr><td colspan="8" class="muted">No holds yet. Override a paused payment in the phone app to see one land here.</td></tr>';
+  $("holds").querySelectorAll("button").forEach((b) => b.onclick = () => api("B", `/ops/holds/${b.dataset.id}/release`, {}));
+});
+onSnapshot(query(bankCol("B", "events"), orderBy("at", "desc"), limit(40)), (snap) => {
+  $("events").innerHTML = snap.docs.map((d) => { const { type, at, bank, ...rest } = d.data();
+    return `<div><span class="t">${when(at)}</span><span><b>${esc(type)}</b> ${esc(JSON.stringify(rest))}</span></div>`; }).join("");
+});
+</script>
+</body></html>

@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bank A · Fraud console</title><link rel="stylesheet" href="/shared/style.css">
+<style>.layout{display:grid;gap:16px;grid-template-columns:1fr} @media(min-width:1000px){.layout{grid-template-columns:1.1fr .9fr}} .detail p{margin:6px 0}</style></head>
+<body>
+<header class="top"><span class="tag">Second Voice</span><h1>Bank A · fraud operations</h1>
+  <nav><a href="/">Home</a><a href="/app">Phone</a><a href="/console-b">Console B</a></nav></header>
+<main><div class="layout">
+  <div class="grid">
+    <div class="card"><h2>Cases</h2><div style="overflow:auto"><table><thead><tr><th>Time</th><th>Customer</th><th>Payee</th><th>Amount</th><th>Score</th><th>Tier</th><th>Status</th></tr></thead><tbody id="cases"></tbody></table></div></div>
+    <div class="card"><h2>Event stream</h2><div class="stream" id="events"></div></div>
+  </div>
+  <div class="card detail" id="detail"><h2>Case</h2><p class="muted">Select a case.</p></div>
+</div></main>
+<script src="/shared/config.js"></script>
+<script type="module">
+import { ready, api, bankCol, caseDoc, turnsCol, onSnapshot, query, orderBy, limit, inr, when, esc } from "/shared/firebase.js";
+const $ = (id) => document.getElementById(id);
+let selected = null, unsubCase = null, unsubTurns = null, turnsCache = [];
+
+await ready;
+onSnapshot(query(bankCol("A", "cases"), orderBy("created_at", "desc"), limit(60)), (snap) => {
+  $("cases").innerHTML = snap.docs.map((d) => { const c = d.data(); return `<tr class="clickable ${d.id === selected ? "sel" : ""}" data-id="${d.id}">
+    <td class="num">${when(c.created_at)}</td><td>${esc(c.customer_name)}</td><td class="mono">${esc(c.payee_vpa)}</td>
+    <td class="num">${inr(c.amount)}</td><td class="num">${c.score}</td><td><span class="pill ${c.tier}">${c.tier}</span></td><td>${esc(c.status)}</td></tr>`; }).join("");
+  $("cases").querySelectorAll("tr").forEach((r) => r.onclick = () => select(r.dataset.id));
+  if (!selected && snap.docs.length) select(snap.docs[0].id);
+});
+onSnapshot(query(bankCol("A", "events"), orderBy("at", "desc"), limit(40)), (snap) => {
+  $("events").innerHTML = snap.docs.map((d) => { const e = d.data(); const { type, at, bank, ...rest } = e;
+    return `<div><span class="t">${when(at)}</span><span><b>${esc(type)}</b> ${esc(JSON.stringify(rest))}</span></div>`; }).join("");
+});
+function select(id) {
+  selected = id; if (unsubCase) unsubCase(); if (unsubTurns) unsubTurns();
+  unsubTurns = onSnapshot(query(turnsCol("A", id), orderBy("n")), (s) => { turnsCache = s.docs.map((d) => d.data()); renderDetail(window.__case); });
+  unsubCase = onSnapshot(caseDoc("A", id), (s) => { window.__case = s.data(); renderDetail(window.__case); });
+  $("cases").querySelectorAll("tr").forEach((r) => r.classList.toggle("sel", r.dataset.id === id));
+}
+function renderDetail(c) {
+  if (!c) return;
+  const f = c.features || {};
+  $("detail").innerHTML = `<h2>Case ${selected.slice(0, 8)}</h2>
+    <p><b>${esc(c.customer_name)}</b> → <span class="mono">${esc(c.payee_vpa)}</span> (${esc(c.payee_name || "name unknown")}, bank ${esc(c.payee_bank || "?")}) · <b class="num">${inr(c.amount)}</b></p>
+    <p>Coercion score <b class="num">${c.score}</b>${c.score_after_conversation != null ? ` → <b class="num">${c.score_after_conversation}</b> after conversation` : ""} · <span class="pill ${c.tier}">${c.tier}</span> · status <b>${esc(c.status)}</b>${c.decision ? ` (${esc(c.decision)})` : ""}</p>
+    <p>Suspected script: <b>${esc(c.script?.name)}</b> <span class="muted">${esc(c.script?.reason || "")}</span></p>
+    <p>Receiver band from Bank B: <span class="pill ${esc(c.receiver_band || "")}">${esc(c.receiver_band || "none")}</span> · 90-day max ${inr(f.history_max_90d || 0)} · fan-in ${f.fan_in_first_time_payers_24h ?? 0} first-time payers / 24 h</p>
+    <div class="chips" style="margin:8px 0">${(c.signals || []).map((s) => `<span class="chip ${s.fired ? "fired" : ""}">${esc(s.label)}${s.fired ? ` +${s.weight}` : ""}</span>`).join("")}</div>
+    ${c.trusted_contact_called ? `<p>Trusted contact <b>${esc(c.trusted_contact?.name)}</b> called at ${when(c.trusted_contact_called_at)}.</p>` : ""}
+    ${c.credit_result ? `<p>Credit to receiving bank: <b>${esc(c.credit_result.status)}</b> ${c.credit_result.release_at ? "· held until " + new Date(c.credit_result.release_at).toLocaleString("en-IN") : ""}</p>` : ""}
+    <h2 style="margin-top:14px">Transcript</h2>
+    <div class="chat">${turnsCache.map((t) => `<div class="bubble ${t.role}">${esc(t.text)}${t.reason ? `<div class="muted" style="font-size:.75rem;margin-top:4px">${esc(t.reason)}</div>` : ""}</div>`).join("") || '<span class="muted">No conversation (allowed without interruption).</span>'}</div>
+    <h2 style="margin-top:14px">Summary</h2><p>${esc(c.summary || "Written when the case closes.")}</p>
+    <h2 style="margin-top:14px">Outcome</h2>
+    <div class="row">${c.outcome ? `<b>${esc(c.outcome)}</b>` : `<button class="accent" id="scam">Confirmed scam · blocklist payee · report to I4C</button><button id="fa">False alarm</button>`}
+      ${c.status === "held" ? `<button id="rel">Release payment</button>` : ""}</div>`;
+  $("scam")?.addEventListener("click", () => api("A", `/ops/cases/${selected}/outcome`, { outcome: "confirmed_scam" }));
+  $("fa")?.addEventListener("click", () => api("A", `/ops/cases/${selected}/outcome`, { outcome: "false_alarm" }));
+  $("rel")?.addEventListener("click", () => api("A", `/cases/${selected}/action`, { action: "release" }));
+}
+</script>
+</body></html>

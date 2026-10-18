@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Second Voice</title><link rel="stylesheet" href="/shared/style.css"></head>
+<body>
+<header class="top"><span class="tag">Second Voice</span><h1>Coercion-aware payment interruptor for UPI</h1></header>
+<main style="max-width:760px">
+  <div class="card">
+    <h2>For judges</h2>
+    <p>Three screens, no login. Open them side by side.</p>
+    <ol>
+      <li><a href="/app">The customer's phone</a>. Pick <b>Digital arrest</b> and tap Pay. Then try <b>Normal payment</b>.</li>
+      <li><a href="/console-a">Bank A fraud console</a>. The payer bank: cases, signals, transcript, summary.</li>
+      <li><a href="/console-b">Bank B console</a>. The receiving bank: its own account scores, the shared band, held credits.</li>
+    </ol>
+    <p class="muted">Device signals (active call, screen-share app, payee age) are toggles in the mock app. Registry lookups are stubbed. Everything else is live: Cloud Run, Firestore, Gemini on Vertex AI.</p>
+    <p class="mono" id="health">checking services…</p>
+  </div>
+</main>
+<script src="/shared/config.js"></script>
+<script>
+(async () => {
+  const c = window.SV_CONFIG, out = [];
+  for (const [k, u] of [["bank-a", c.bankA], ["bank-b", c.bankB]]) {
+    try { const h = await (await fetch(u + "/health")).json(); out.push(`${k}: up · gemini ${h.gemini_mode} · firestore ${h.firestore}`); }
+    catch (e) { out.push(`${k}: DOWN (${u})`); }
+  }
+  document.getElementById("health").textContent = out.join("   |   ");
+})();
+</script>
+</body></html>

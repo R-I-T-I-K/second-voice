@@ -1,0 +1,148 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bank A · UPI</title><link rel="stylesheet" href="/shared/style.css">
+<style>
+  main { max-width: 980px; }
+  .phone { max-width: 420px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 18px; min-height: 640px; display: flex; flex-direction: column; gap: 12px; }
+  .phone .bar { display:flex; justify-content:space-between; font-family:var(--mono); font-size:.75rem; color:var(--muted); }
+  .amount { font-size: 2rem; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .presets { display:flex; gap:6px; flex-wrap:wrap; }
+  .presets button.on { background: var(--fg); color: #fff; }
+  .toggle { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:.9rem; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .toggle input[type=number] { width: 80px; padding: 4px 6px; }
+  .status { padding: 10px 12px; border-radius: 8px; font-size: .92rem; border: 1px solid var(--line); }
+  .status.hold { background: var(--accent-soft); border-color: #e7c9a3; }
+  .status.allow { background: #ecfdf3; border-color: #a7e3bd; }
+  .status.block { background: #fef2f2; border-color: #f5b5b5; }
+  .side { display:grid; gap:16px; }
+  @media (min-width: 900px) { .layout { display:grid; grid-template-columns: 440px 1fr; gap: 20px; align-items:start; } }
+</style></head>
+<body>
+<header class="top"><span class="tag">Second Voice</span><h1>Bank A · customer app (mock)</h1>
+  <nav><a href="/">Home</a><a href="/console-a">Console A</a><a href="/console-b">Console B</a></nav></header>
+<main><div class="layout">
+  <div class="phone" id="phone">
+    <div class="bar"><span id="cust-name">…</span><span id="clock"></span></div>
+    <div class="presets" id="presets"></div>
+    <p class="muted" id="blurb" style="margin:0;font-size:.88rem"></p>
+    <div id="pay-form">
+      <label>Pay to (VPA)</label><input id="vpa">
+      <div class="row" style="margin-top:8px"><div style="flex:1"><label>Amount (₹)</label><input id="amount" type="number" min="1"></div></div>
+      <div style="margin-top:10px">
+        <label>Device context (toggles stand in for the SDK)</label>
+        <div class="toggle"><span>Active call, minutes</span><input type="number" id="call" min="0"></div>
+        <div class="toggle"><span>Screen-share app installed, min ago (blank = none)</span><input type="number" id="remote" min="0"></div>
+        <div class="toggle"><span>Payee added, min ago (blank = old payee)</span><input type="number" id="added" min="0"></div>
+        <div class="toggle"><span>Registry hit (stubbed)</span><input type="checkbox" id="registry"></div>
+      </div>
+      <button class="primary" id="pay" style="width:100%;margin-top:12px;padding:12px">Pay</button>
+    </div>
+    <div id="result" hidden>
+      <div class="status" id="status"></div>
+      <div class="chat" id="chat" style="margin-top:10px"></div>
+      <div class="opts" id="opts" style="margin-top:8px"></div>
+      <div class="row" id="free" style="margin-top:8px" hidden><input id="text" placeholder="Type a reply…"><button id="send">Send</button></div>
+      <button id="again" style="width:100%;margin-top:14px">New payment</button>
+    </div>
+  </div>
+  <div class="side">
+    <div class="card"><h2>What the hook saw</h2><div id="score" class="muted">Tap Pay to score a payment.</div><div class="chips" id="chips" style="margin-top:8px"></div></div>
+    <div class="card"><h2>Scenario</h2><p class="muted" style="margin:0;font-size:.9rem">Sunita Rao, 58, Pune, 11 years with Bank A. 90-day max payment ₹22,000 (a clinic bill). Pays Pune Dairy ₹80 every morning. Trusted contact: Priya, her daughter.</p></div>
+  </div>
+</div></main>
+<script src="/shared/config.js"></script>
+<script type="module">
+import { ready, api, caseDoc, turnsCol, onSnapshot, query, orderBy, inr, esc } from "/shared/firebase.js";
+const $ = (id) => document.getElementById(id);
+let scenarios = [], current = null, caseId = null, unsubTurns = null, lastStatus = null;
+$("clock").textContent = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+async function load() {
+  scenarios = await api("A", "/scenarios", null, "GET");
+  const custs = await api("A", "/customers", null, "GET");
+  $("cust-name").textContent = custs.find((c) => c.id === "cust_sunita")?.name ?? "Sunita Rao";
+  $("presets").innerHTML = scenarios.map((s) => `<button data-id="${s.id}">${esc(s.name)}</button>`).join("");
+  $("presets").querySelectorAll("button").forEach((b) => b.onclick = () => pick(b.dataset.id));
+  pick("digital_arrest");
+}
+function pick(id) {
+  current = scenarios.find((s) => s.id === id);
+  $("presets").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.id === id));
+  $("blurb").textContent = current.blurb;
+  $("vpa").value = current.payee_vpa; $("amount").value = current.amount;
+  $("call").value = current.device.active_call_minutes || "";
+  $("remote").value = current.device.remote_access_app_installed_minutes_ago ?? "";
+  $("added").value = current.device.payee_added_minutes_ago ?? "";
+  $("registry").checked = !!current.registry_hit;
+}
+const numOrNull = (v) => (v === "" ? null : Number(v));
+
+$("pay").onclick = async () => {
+  $("pay").disabled = true; $("pay").textContent = "Scoring…";
+  try {
+    const res = await api("A", "/pay", {
+      customer_id: current.customer_id, payee_vpa: $("vpa").value.trim(), payee_name: current.payee_name,
+      amount: Number($("amount").value),
+      device: { active_call_minutes: Number($("call").value || 0), remote_access_app_installed_minutes_ago: numOrNull($("remote").value),
+                payee_added_minutes_ago: numOrNull($("added").value), seconds_on_pay_screen: 60 },
+      registry_hit: $("registry").checked,
+    });
+    showScore(res);
+    caseId = res.case_id;
+    $("pay-form").hidden = true; $("result").hidden = false;
+    if (res.decision === "allow") {
+      setStatus("allow", `Paid ${inr(res.score ? Number($("amount").value) : 0)} to ${esc($("vpa").value)}. No interruption. Scored ${res.score} in the hook.`);
+    } else if (res.decision === "block") {
+      setStatus("block", "Payment stopped.");
+    } else {
+      setStatus("hold", `Payment paused. Suspected: ${esc(res.script.name)}.`);
+      $("free").hidden = false;
+    }
+    watchCase(res.case_id);
+  } catch (e) { alert(e.message); }
+  $("pay").disabled = false; $("pay").textContent = "Pay";
+};
+
+function showScore(res) {
+  $("score").innerHTML = `coercion score <b class="num">${res.score}</b> · tier <span class="pill ${res.tier}">${res.tier}</span>` +
+    (res.script?.id && res.script.id !== "none" ? ` · script <b>${esc(res.script.name)}</b> <span class="muted">(${esc(res.script.reason)})</span>` : "");
+  $("chips").innerHTML = res.signals.map((c) => `<span class="chip ${c.fired ? "fired" : ""}">${esc(c.label)}${c.fired ? ` +${c.weight}` : ""}</span>`).join("");
+}
+function setStatus(kind, html) { const s = $("status"); s.className = `status ${kind}`; s.innerHTML = html; }
+
+function watchCase(id) {
+  if (unsubTurns) unsubTurns();
+  onSnapshot(caseDoc("A", id), (snap) => {
+    const c = snap.data(); if (!c) return;
+    if (c.status !== lastStatus) {
+      lastStatus = c.status;
+      if (c.status === "released") setStatus("allow", `Released. ${inr(c.amount)} sent to ${esc(c.payee_name || c.payee_vpa)}.`);
+      if (c.status === "cancelled") setStatus("allow", "Cancelled. Nothing left your account.");
+      if (c.status === "blocked") setStatus("block", "Payment stopped by the bank.");
+      if (c.status === "overridden") setStatus("hold", `Sent against advice. Receiving bank: <b>${esc(c.credit_result?.status)}</b>` +
+        (c.credit_result?.status === "held" ? ` until ${new Date(c.credit_result.release_at).toLocaleString("en-IN")}` : ""));
+      if (c.status === "held" && c.trusted_contact_called) setStatus("hold", `Paused for 24 h. Calling ${esc(c.trusted_contact?.name)}…`);
+    }
+  });
+  unsubTurns = onSnapshot(query(turnsCol("A", id), orderBy("n")), (snap) => {
+    const turns = snap.docs.map((d) => d.data());
+    $("chat").innerHTML = turns.map((t) => `<div class="bubble ${t.role}">${esc(t.text)}</div>`).join("");
+    const last = turns[turns.length - 1];
+    const closed = ["released", "cancelled", "blocked", "overridden"].includes(lastStatus);
+    $("opts").innerHTML = (!closed && last?.role === "agent" ? last.options : []).map((o) =>
+      `<button class="${o.id === "cancel" ? "accent" : ""}" data-id="${esc(o.id)}">${esc(o.label)}</button>`).join("");
+    $("opts").querySelectorAll("button").forEach((b) => b.onclick = () => answer({ option: b.dataset.id }));
+    $("free").hidden = closed || !last || last.role !== "agent" || last.options.length === 0;
+    $("chat").scrollTop = $("chat").scrollHeight;
+  });
+}
+async function answer(body) {
+  $("opts").querySelectorAll("button").forEach((b) => b.disabled = true);
+  try { await api("A", `/cases/${caseId}/answer`, body); } catch (e) { alert(e.message); }
+}
+$("send").onclick = () => { const t = $("text").value.trim(); if (t) { answer({ text: t }); $("text").value = ""; } };
+$("text").onkeydown = (e) => { if (e.key === "Enter") $("send").onclick(); };
+$("again").onclick = () => { if (unsubTurns) unsubTurns(); lastStatus = null; $("result").hidden = true; $("pay-form").hidden = false; $("chat").innerHTML = ""; $("opts").innerHTML = ""; };
+
+await ready; load();
+</script>
+</body></html>

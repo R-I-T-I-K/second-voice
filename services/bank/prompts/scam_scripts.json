@@ -1,0 +1,227 @@
+{
+  "scripts": [
+    {
+      "id": "digital_arrest",
+      "name": "Digital arrest",
+      "summary": "Caller poses as police, CBI, ED, TRAI or a court. Claims the victim's Aadhaar, SIM or parcel is linked to a crime. Orders the victim to stay on a video call, tell no one, and move savings to a 'verification' or 'RBI safe' account.",
+      "markers": [
+        "active video or voice call",
+        "new payee added minutes ago",
+        "amount far above normal",
+        "remote-access or screen-share app installed",
+        "payee is an individual at another bank"
+      ],
+      "coaching_lines": [
+        "Tell them it is for a family emergency.",
+        "Do not disconnect this call or you will be arrested.",
+        "This is a confidential investigation. Do not inform anyone."
+      ],
+      "opening_question": "Before this goes through: is someone on a call with you right now who has asked you not to disconnect, or not to tell anyone about this payment?",
+      "opening_options": [
+        {
+          "id": "yes_on_call",
+          "label": "Yes"
+        },
+        {
+          "id": "no_known",
+          "label": "No, I know this person"
+        }
+      ],
+      "facts": [
+        "No police, CBI, ED, court or government agency ever collects money through UPI, and 'digital arrest' is not a real legal process.",
+        "Genuine agencies do not ask you to stay on a video call or to keep an investigation secret from your family.",
+        "If your Aadhaar were actually misused, you would receive a written notice, not a demand for money."
+      ],
+      "resolution_options": [
+        {
+          "id": "trusted_contact",
+          "label": "Call my trusted contact"
+        },
+        {
+          "id": "talk_to_bank",
+          "label": "Talk to the bank"
+        },
+        {
+          "id": "cancel",
+          "label": "I understand, cancel the payment"
+        },
+        {
+          "id": "proceed_anyway",
+          "label": "Proceed anyway"
+        }
+      ]
+    },
+    {
+      "id": "parcel_customs",
+      "name": "Parcel or customs",
+      "summary": "Caller claims a courier parcel in the victim's name contains drugs or illegal items and demands a 'clearance fee' or hands over to a fake police officer.",
+      "markers": [
+        "active call",
+        "new payee",
+        "round amount",
+        "courier or customs mentioned"
+      ],
+      "coaching_lines": [
+        "Say it is a customs fee for your parcel."
+      ],
+      "opening_question": "Is this payment connected to a parcel, courier or customs call you received today?",
+      "opening_options": [
+        {
+          "id": "yes_parcel",
+          "label": "Yes"
+        },
+        {
+          "id": "no_known",
+          "label": "No, I know this person"
+        }
+      ],
+      "facts": [
+        "Courier companies and customs never collect fees through personal UPI accounts.",
+        "Parcels with illegal contents are handled by written notice, not phone calls demanding money."
+      ],
+      "resolution_options": [
+        {
+          "id": "trusted_contact",
+          "label": "Call my trusted contact"
+        },
+        {
+          "id": "cancel",
+          "label": "Cancel the payment"
+        },
+        {
+          "id": "proceed_anyway",
+          "label": "Proceed anyway"
+        }
+      ]
+    },
+    {
+      "id": "kyc_expiry",
+      "name": "KYC expiry",
+      "summary": "Message or call says the bank account, SIM or wallet will be blocked unless KYC is updated immediately through a link or a payment.",
+      "markers": [
+        "urgency about account blocking",
+        "link clicked recently",
+        "small to medium payment to an individual"
+      ],
+      "coaching_lines": [
+        "Pay the verification charge to keep the account active."
+      ],
+      "opening_question": "Were you told your account, SIM or wallet would be blocked today unless you made this payment?",
+      "opening_options": [
+        {
+          "id": "yes_kyc",
+          "label": "Yes"
+        },
+        {
+          "id": "no_known",
+          "label": "No, I know this person"
+        }
+      ],
+      "facts": [
+        "Banks never charge a fee to update KYC and never ask for it through a personal UPI payment."
+      ],
+      "resolution_options": [
+        {
+          "id": "trusted_contact",
+          "label": "Call my trusted contact"
+        },
+        {
+          "id": "cancel",
+          "label": "Cancel the payment"
+        },
+        {
+          "id": "proceed_anyway",
+          "label": "Proceed anyway"
+        }
+      ]
+    },
+    {
+      "id": "investment_group",
+      "name": "Investment group",
+      "summary": "Victim is added to a WhatsApp or Telegram trading group, sees fake profits, and is asked to deposit increasing amounts. Withdrawals are blocked until 'tax' or 'fees' are paid.",
+      "markers": [
+        "repeated transfers to the same recent payee",
+        "amounts increasing",
+        "no active call",
+        "payee is an individual"
+      ],
+      "coaching_lines": [
+        "Deposit the tax amount to unlock your profits."
+      ],
+      "opening_question": "Is this payment going to an investment or trading group? Have you been able to withdraw any earlier amount from it?",
+      "opening_options": [
+        {
+          "id": "yes_no_withdraw",
+          "label": "Yes, and no withdrawal yet"
+        },
+        {
+          "id": "yes_withdrew",
+          "label": "Yes, I have withdrawn before"
+        },
+        {
+          "id": "no_known",
+          "label": "No, I know this person"
+        }
+      ],
+      "facts": [
+        "Legitimate platforms never ask you to pay a fee to withdraw your own money.",
+        "Guaranteed daily returns do not exist."
+      ],
+      "resolution_options": [
+        {
+          "id": "trusted_contact",
+          "label": "Call my trusted contact"
+        },
+        {
+          "id": "cancel",
+          "label": "Cancel the payment"
+        },
+        {
+          "id": "proceed_anyway",
+          "label": "Proceed anyway"
+        }
+      ]
+    },
+    {
+      "id": "task_fraud",
+      "name": "Task or job fraud",
+      "summary": "Victim is paid small amounts for 'tasks' such as liking videos, then asked to deposit money to unlock bigger tasks.",
+      "markers": [
+        "small inflows followed by larger outflows to the same party",
+        "payee is an individual",
+        "no call"
+      ],
+      "coaching_lines": [
+        "Deposit to unlock the premium task."
+      ],
+      "opening_question": "Were you asked to deposit money to unlock a task, job or commission?",
+      "opening_options": [
+        {
+          "id": "yes_task",
+          "label": "Yes"
+        },
+        {
+          "id": "no_known",
+          "label": "No, I know this person"
+        }
+      ],
+      "facts": [
+        "No genuine employer asks you to pay to receive work or wages."
+      ],
+      "resolution_options": [
+        {
+          "id": "trusted_contact",
+          "label": "Call my trusted contact"
+        },
+        {
+          "id": "cancel",
+          "label": "Cancel the payment"
+        },
+        {
+          "id": "proceed_anyway",
+          "label": "Proceed anyway"
+        }
+      ]
+    }
+  ]
+}
