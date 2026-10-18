@@ -1,0 +1,559 @@
+<!doctype html>
+<title>Second Voice Demo Plan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a single reading column (72ch) for the script; the diagram and tier table break out wider and scroll sideways on phones. */
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --fg: #16202b;
+    --muted: #5b6774;
+    --line: #d9dee5;
+    --accent: #b45309;        /* the "hold" amber */
+    --accent-soft: #fdf1e2;
+    --ok: #15803d;
+    --warn: #b45309;
+    --crit: #b91c1c;
+    --ink-soft: #e9edf2;      /* diagram lane fill */
+    --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f151c; --surface: #171f28; --fg: #e8edf2; --muted: #9aa7b4; --line: #2b3641;
+      --accent: #f59e0b; --accent-soft: #2a2114; --ok: #4ade80; --warn: #f59e0b; --crit: #f87171;
+      --ink-soft: #1d2731; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f151c; --surface: #171f28; --fg: #e8edf2; --muted: #9aa7b4; --line: #2b3641;
+    --accent: #f59e0b; --accent-soft: #2a2114; --ok: #4ade80; --warn: #f59e0b; --crit: #f87171;
+    --ink-soft: #1d2731; color-scheme: dark;
+  }
+
+  body { background: var(--bg); color: var(--fg); font-family: var(--body); line-height: 1.55; font-size: 16px; }
+  .wrap {
+    max-width: 1120px; margin: 0 auto;
+    padding-block: 40px 72px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .col { max-width: 72ch; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2rem, 4vw, 2.9rem); line-height: 1.1; }
+  h2 { font-size: 1.6rem; line-height: 1.2; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin-top: 28px; font-family: var(--body); font-weight: 600; }
+  p { margin: 12px 0; }
+  .eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .lede { font-size: 1.15rem; color: var(--muted); margin-top: 14px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+  .meta b { color: var(--fg); font-weight: 500; }
+
+  /* Demo beats */
+  .beats { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 14px; }
+  .beat { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; display: grid; grid-template-columns: 92px 1fr; gap: 6px 18px; }
+  .beat .t { font-family: var(--mono); font-size: 0.85rem; color: var(--accent); font-variant-numeric: tabular-nums; padding-top: 3px; }
+  .beat h3 { margin: 0; font-size: 1.05rem; }
+  .beat .body { grid-column: 2; }
+  .beat p { margin: 8px 0; }
+  .beat .say { border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; margin: 10px 0; font-family: var(--display); font-size: 1.05rem; }
+  .beat .screen { font-size: 0.92rem; color: var(--muted); }
+  .beat .screen b { color: var(--fg); font-weight: 500; }
+  .sig { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .sig span { font-family: var(--mono); font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .sig span.cold { background: transparent; color: var(--muted); border-color: var(--line); }
+  @media (max-width: 560px) { .beat { grid-template-columns: 1fr; } .beat .body { grid-column: 1; } }
+
+  .chat { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; margin: 10px 0; display: grid; gap: 8px; font-size: 0.95rem; }
+  .chat div { max-width: 92%; padding: 8px 12px; border-radius: 10px; }
+  .chat .agent { background: var(--surface); border: 1px solid var(--line); justify-self: start; }
+  .chat .user { background: var(--accent-soft); justify-self: end; }
+  .chat .opt { justify-self: start; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); padding: 0 4px; }
+
+  /* Tier table */
+  .tbl-wrap { overflow-x: auto; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.95rem; background: var(--surface); border: 1px solid var(--line); }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  tr:last-child td { border-bottom: 0; }
+  .pill { display: inline-block; font-family: var(--mono); font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+  .pill.ok { color: var(--ok); border-color: var(--ok); }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.crit { color: var(--crit); border-color: var(--crit); }
+  td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Diagram */
+  .diagram { overflow-x: auto; margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+  .diagram svg { display: block; min-width: 940px; width: 100%; height: auto; font-family: var(--body); }
+  .diagram .lane { fill: var(--ink-soft); }
+  .diagram .lane-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; fill: var(--muted); }
+  .diagram .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+  .diagram .box.gcp { stroke: var(--fg); }
+  .diagram .box.sim { stroke: var(--muted); stroke-dasharray: 5 4; }
+  .diagram .title { font-size: 13.5px; font-weight: 600; fill: var(--fg); }
+  .diagram .sub { font-size: 11.5px; fill: var(--muted); }
+  .diagram .svc { font-family: var(--mono); font-size: 10px; fill: var(--accent); letter-spacing: 0.04em; }
+  .diagram .flow { fill: none; stroke: var(--fg); stroke-width: 1.4; marker-end: url(#arr); }
+  .diagram .flow.back { stroke: var(--muted); stroke-dasharray: 5 4; marker-end: url(#arr-muted); }
+  .diagram .flow.hold { stroke: var(--accent); marker-end: url(#arr-accent); }
+  .diagram .flow.both { marker-start: url(#arr); }
+  .diagram .step { fill: var(--fg); }
+  .diagram .step-n { font-family: var(--mono); font-size: 10.5px; font-weight: 500; fill: var(--bg); text-anchor: middle; }
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 24px; margin-top: 16px; font-size: 0.93rem; }
+  .legend div { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
+  .legend .k { font-family: var(--mono); font-size: 0.78rem; background: var(--fg); color: var(--bg); border-radius: 999px; width: 22px; height: 22px; display: grid; place-items: center; margin-top: 2px; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; min-width: 0; }
+  .card h3 { margin-top: 0; }
+  .card ul { margin: 8px 0 0; padding-left: 18px; }
+  .card li { margin: 4px 0; }
+  .card li b { font-weight: 600; }
+  code { font-family: var(--mono); font-size: 0.86em; background: var(--ink-soft); padding: 1px 5px; border-radius: 3px; }
+  .note { font-size: 0.93rem; color: var(--muted); }
+  @media (prefers-reduced-motion: no-preference) { .beat { transition: border-color .15s; } .beat:hover { border-color: var(--accent); } }
+</style>
+
+<div class="wrap">
+  <div class="col">
+    <div class="eyebrow">Hack2Skill · BFSI track · working name</div>
+    <h1>Second Voice</h1>
+    <p class="lede">A coercion-aware payment interruptor for UPI. It sits in the payer bank's authorization hook, scores whether the account holder is being manipulated right now, and answers with a conversation instead of a banner. The receiving bank runs the same stack on its own accounts and shares one word back: a receiver risk band.</p>
+    <div class="meta">
+      <span>Video <b>3:30, limit 3 to 4 min</b></span>
+      <span>Cast <b>3 people</b></span>
+      <span>Screens <b>phone + two bank consoles</b></span>
+      <span>Thesis <b>"Is she being manipulated?" not "Is this her?"</b></span>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>Demo arc</h2>
+    <p>One victim, one scam script, one arc from phone call to held transfer, the counter-example that shows a normal payment flows untouched, then Bank B trapping the money even when the payer-side hold is overridden. The presenter narrates. One teammate holds the phone and plays Sunita. One teammate, off camera, voices the scammer and reads the real digital arrest script.</p>
+
+    <ol class="beats">
+      <li class="beat">
+        <div class="t">0:00 – 0:20</div>
+        <h3>Hook</h3>
+        <div class="body">
+          <p class="say">"Every bank fraud system asks one question: is this really the account holder? In the fastest growing fraud in India, the answer is yes. She is on her own phone, typing her own PIN, because a man calling himself a CBI officer told her to."</p>
+          <p class="screen"><b>On screen:</b> title card, one number from I4C on digital arrest losses, sourced on the slide. Nothing else.</p>
+        </div>
+      </li>
+
+      <li class="beat">
+        <div class="t">0:20 – 0:50</div>
+        <h3>Set the scene</h3>
+        <div class="body">
+          <p>Sunita Rao, 58, retired teacher in Pune, 11 years with the bank. A video call is already running. The scammer voice reads lines from the actual script: her Aadhaar was used for money laundering, a warrant exists, she must stay on the line, she must not tell her family, she must transfer her savings to a "verification account" and will get it back after clearance.</p>
+          <p class="screen"><b>On screen:</b> split view. Left, the mock bank app on the phone, mirrored. Right, the fraud-ops console, empty, with the live event stream ticking at zero.</p>
+        </div>
+      </li>
+
+      <li class="beat">
+        <div class="t">0:50 – 1:20</div>
+        <h3>The attack</h3>
+        <div class="body">
+          <p>Sunita adds a new payee, "Rakesh Kumar", types ₹2,40,000, taps Pay. The console lights up as the request hits the scoring hook. The presenter reads the signals as they appear.</p>
+          <div class="sig">
+            <span>payee added 2 min ago</span>
+            <span>amount 11× her 90-day max</span>
+            <span>call active 23 min</span>
+            <span>screen-share app installed 40 min ago</span>
+            <span>payee first seen on our book yesterday</span>
+            <span>12 of our customers paid it today, all first-time</span>
+            <span>Bank B receiver band: HIGH</span>
+            <span class="cold">registry hit: payee mobile flagged by DoT FRI (stubbed)</span>
+          </div>
+          <p class="say">"Any one of these is noise. A pensioner adding a new payee happens every day. All eight together have a name. The system's best guess is digital arrest, with a score of 0.91. Note what we never see: the receiver's account at Bank B. Bank B's own model saw it, and told us exactly one word: High."</p>
+          <p class="screen"><b>On screen:</b> the score card flips to <b>HOLD</b>. The phone shows a spinner, then the conversation screen.</p>
+        </div>
+      </li>
+
+      <li class="beat">
+        <div class="t">1:20 – 2:00</div>
+        <h3>The intervention</h3>
+        <div class="body">
+          <p>The agent speaks English in the prototype. Language is a field on the customer record and a line in the prompt, and the deck shows one Hindi turn to make the point. Its questions come from the digital arrest script, not from a generic template. The scammer voice tries to coach her ("tell them it is for a family emergency") and cannot keep up with the questions.</p>
+          <div class="chat">
+            <div class="agent">Sunita, before this goes through: is someone on a call with you right now who has asked you not to disconnect, or not to tell anyone about this payment?</div>
+            <div class="opt">[ Yes ] [ No, I know this person ]</div>
+            <div class="user">Yes. A CBI officer. He says my Aadhaar was misused and this is a verification account.</div>
+            <div class="agent">No police, CBI, or court collects money through UPI, and "digital arrest" is not a real legal process. This looks like a scam that has targeted many people this month. I have paused the payment. Would you like me to call your daughter Priya now, on this screen, so she can hear this too?</div>
+            <div class="opt">[ Call Priya ] [ Talk to the bank ] [ I understand, cancel the payment ]</div>
+          </div>
+          <p>Sunita taps "Call Priya". The transfer is placed on a 24-hour hold. The scammer voice goes quiet and hangs up.</p>
+          <p class="say">"A banner says 'beware of fraud' and gets dismissed in two seconds under coercion. A question the scammer did not script for breaks the spell. That is the product."</p>
+        </div>
+      </li>
+
+      <li class="beat">
+        <div class="t">2:00 – 2:20</div>
+        <h3>What Bank A sees, and the false-positive story</h3>
+        <div class="body">
+          <p>Cut to Bank A's ops console. A case has been created with the signal breakdown, the full transcript, and a two-line summary written by the agent. Rakesh Kumar's VPA goes on the bank's payee blocklist and a report is queued to I4C.</p>
+          <p>Then the counter-example. Same Sunita, same phone, ₹2,400 to her regular milk vendor. The hook scores it in under 200 ms, tier Low, the payment completes with no interruption at all.</p>
+          <p class="screen"><b>On screen:</b> case view, then a side-by-side of the two transactions: eight warm signals versus zero.</p>
+        </div>
+      </li>
+
+      <li class="beat">
+        <div class="t">2:20 – 2:45</div>
+        <h3>Bank B, and the override that still fails</h3>
+        <div class="body">
+          <p>Cut to Bank B's console. Rakesh Kumar's account scored High this morning, before Sunita ever tapped Pay: opened nine days ago, twelve first-time inflows today, each swept out within twenty minutes. That band is what Bank A received during address validation, in the same lookup that returns the payee's name today.</p>
+          <p>Then the what-if. The presenter replays Sunita's payment with the hold overridden. The debit goes through. Bank B's hook catches the credit on arrival and holds it for 24 hours. The money is still inside the banking system, not in an ATM in another state.</p>
+          <p class="say">"Two banks, two chances. The payer bank stops the person. The receiver bank traps the money. And every bank that joins makes every other bank's score better."</p>
+          <p class="screen"><b>On screen:</b> Bank B account view with the band, then the held credit with its 24-hour timer.</p>
+        </div>
+      </li>
+
+      <li class="beat">
+        <div class="t">2:45 – 3:15</div>
+        <h3>How it is built</h3>
+        <div class="body">
+          <p>Thirty seconds on the architecture diagram, naming the four services the submission asks for. Cloud Run hosts the payment APIs, the scorers and the Gemini agent for both banks. Firestore holds cases, holds and conversation state, and its live listeners are what made the phone and the two consoles move together during the demo. Firebase Hosting and Auth serve the mock app and the consoles. Gemini named the script, ran the conversation and wrote the case summary.</p>
+          <p class="screen"><b>On screen:</b> the architecture diagram with each service highlighted as it is named, then the GitHub repo for two seconds.</p>
+        </div>
+      </li>
+
+      <li class="beat">
+        <div class="t">3:15 – 3:30</div>
+        <h3>Close</h3>
+        <div class="body">
+          <p class="say">"Banks already run a fraud hook before every UPI debit. We make that hook understand coercion and give it a voice, and we give the receiving bank a reason to answer. The UK now splits reimbursement for this fraud between sending and receiving banks. India is next. The prototype is live at the link in our submission. Pick the digital arrest scenario and try to pay."</p>
+          <p class="screen"><b>On screen:</b> the prototype URL and the two tier tables. Stop talking by 3:30, well inside the 4-minute cap.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h3>Rehearsal notes</h3>
+    <p class="note">Pre-seed Sunita's 90 days of history and Rakesh Kumar's inflow history, so the "11×", the fan-in and the High band are all real when queried live. The judges will click through the deployed prototype themselves, so the mock app needs scenario presets (Digital arrest, Normal payment, Custom) that reproduce the video in under a minute without reading anything. Give the scammer voice a printed script with three coaching lines to try during the intervention. Record a backup video of the full run in case the venue network drops.</p>
+  </div>
+
+  <h2 style="max-width:72ch">Decision tiers</h2>
+  <p class="col">The tiering is the answer to "won't this annoy everyone?". Low risk never sees the product. Medium costs a few seconds. Only the pattern that looks like a scam gets a hold.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Score</th><th>Tier</th><th>What the customer experiences</th><th>What the bank gets</th></tr></thead>
+      <tbody>
+        <tr><td class="n">&lt; 0.30</td><td><span class="pill ok">Low</span></td><td>Nothing. Payment completes as today.</td><td>Score logged for model training only.</td></tr>
+        <tr><td class="n">0.30 – 0.60</td><td><span class="pill warn">Medium</span></td><td>One targeted question, 5-second pause, then proceed.</td><td>Answer stored; score updated.</td></tr>
+        <tr><td class="n">0.60 – 0.85</td><td><span class="pill warn">High</span></td><td>Transfer held. Conversation, trusted-contact call, timed cooling-off before any override.</td><td>Case opened with transcript and signals.</td></tr>
+        <tr><td class="n">&gt; 0.85 + payee reputation hit</td><td><span class="pill crit">Very high</span></td><td>Blocked. Customer is told why and routed to a human.</td><td>Case escalated; payee blocklisted and reported to I4C.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="max-width:72ch">Receiver bands, shared by Bank B</h3>
+  <p class="col note">Bank B scores its own accounts continuously and shares only the band, never account data. The band is one input to Bank A's payer-side score, not a decision on its own.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Mule score</th><th>Band</th><th>What Bank B does</th><th>How Bank A uses it</th></tr></thead>
+      <tbody>
+        <tr><td class="n">&lt; 0.40</td><td><span class="pill ok">Low</span></td><td>Shares the band. Nothing else.</td><td>No effect on the payer score.</td></tr>
+        <tr><td class="n">0.40 – 0.75</td><td><span class="pill warn">Elevated</span></td><td>Shares the band, watches sweep-out speed.</td><td>Raises the payee reputation feature; can lift Medium to High.</td></tr>
+        <tr><td class="n">&gt; 0.75</td><td><span class="pill crit">High</span></td><td>Shares the band, holds inflows 24 h, opens account review, files I4C report.</td><td>Payee reputation hit: with payer signals, lands in Very high.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 style="max-width:72ch">Architecture</h2>
+  <p class="col">The payer-side hook runs before the debit. The only UPI leg the product touches is the existing address-validation lookup, which Bank B answers with one extra field, the receiver band. Solid boxes are built on Google Cloud for the hackathon. Dashed boxes are simulated for the demo and named as such in the pitch. One constraint shapes the data lane: for a transfer to another bank, the payer bank never sees the receiver's account, so payee reputation is built from the bank's own transaction book plus shared registries, not from receiver account data.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1180 890" role="img" aria-label="Architecture: Bank A's app with SDK sends payment and device context to a Cloud Run payment API, which runs address validation against Bank B and receives a receiver risk band, then publishes to Pub/Sub; a coercion scorer reads BigQuery features, a stubbed registry lookup and an in-service weighted model, hands medium and high cases to a Gemini intervention agent backed by Vertex AI Search; decisions return to the app and are stored in Firestore for the fraud ops console; outcomes flow back to BigQuery. Bank B runs the same stack with receiver features, scores its own accounts, and holds inflows on High-band accounts.">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--fg)"/></marker>
+        <marker id="arr-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker>
+        <marker id="arr-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+      </defs>
+
+      <!-- lanes -->
+      <rect class="lane" x="16" y="40" width="236" height="600" rx="6"/>
+      <text class="lane-label" x="28" y="62">Customer's phone</text>
+      <rect class="lane" x="268" y="40" width="236" height="600" rx="6"/>
+      <text class="lane-label" x="280" y="62">Bank edge · Cloud Run</text>
+      <rect class="lane" x="520" y="40" width="300" height="600" rx="6"/>
+      <text class="lane-label" x="532" y="62">Decision · Cloud Run + Gemini</text>
+      <rect class="lane" x="836" y="40" width="328" height="600" rx="6"/>
+      <text class="lane-label" x="848" y="62">Data, knowledge, operations</text>
+
+      <!-- Phone lane -->
+      <rect class="box" x="32" y="96" width="204" height="118" rx="5"/>
+      <text class="svc" x="44" y="116">FIREBASE HOSTING · WEB MOCK</text>
+      <text class="title" x="44" y="138">Mock bank app</text>
+      <text class="sub" x="44" y="158">Add payee, enter amount, Pay</text>
+      <text class="sub" x="44" y="176">Renders the intervention</text>
+      <text class="sub" x="44" y="194">conversation when told to hold</text>
+
+      <rect class="box" x="32" y="236" width="204" height="118" rx="5"/>
+      <text class="svc" x="44" y="256">SHIELD SDK</text>
+      <text class="title" x="44" y="278">Device context</text>
+      <text class="sub" x="44" y="298">Active call · remote-access app</text>
+      <text class="sub" x="44" y="316">installed · payee age · time on</text>
+      <text class="sub" x="44" y="334">pay screen (toggles in the demo)</text>
+
+      <rect class="box sim" x="32" y="520" width="204" height="88" rx="5"/>
+      <text class="svc" x="44" y="540">SIMULATED</text>
+      <text class="title" x="44" y="562">Trusted-contact call</text>
+      <text class="sub" x="44" y="582">Priya's phone rings on stage;</text>
+      <text class="sub" x="44" y="598">telephony provider out of scope</text>
+
+      <!-- Bank edge lane -->
+      <rect class="box gcp" x="284" y="96" width="204" height="118" rx="5"/>
+      <text class="svc" x="296" y="116">CLOUD RUN</text>
+      <text class="title" x="296" y="138">Payment API</text>
+      <text class="sub" x="296" y="158">Stands in for the bank's UPI switch.</text>
+      <text class="sub" x="296" y="176">Calls the hook, waits ≤ 200 ms,</text>
+      <text class="sub" x="296" y="194">then allows, holds or blocks</text>
+
+      <rect class="box gcp" x="284" y="256" width="136" height="86" rx="5"/>
+      <text class="svc" x="296" y="276">PUB/SUB</text>
+      <text class="title" x="296" y="298">payment.initiated</text>
+      <text class="sub" x="296" y="316">Transaction, device</text>
+      <text class="sub" x="296" y="332">context, receiver band</text>
+
+      <rect class="box sim" x="284" y="520" width="204" height="88" rx="5"/>
+      <text class="svc" x="296" y="540">SIMULATED · NPCI LEG</text>
+      <text class="title" x="296" y="562">Address validation</text>
+      <text class="sub" x="296" y="582">Existing name lookup, extended with</text>
+      <text class="sub" x="296" y="598">one proposed field: receiver band</text>
+
+      <!-- Decision lane -->
+      <rect class="box gcp" x="536" y="96" width="268" height="118" rx="5"/>
+      <text class="svc" x="548" y="116">CLOUD RUN</text>
+      <text class="title" x="548" y="138">Coercion scorer</text>
+      <text class="sub" x="548" y="158">Joins event with history and payee reputation,</text>
+      <text class="sub" x="548" y="176">weighted model scores coercion probability,</text>
+      <text class="sub" x="548" y="194">Gemini names the scam script, picks tier</text>
+
+      <rect class="box gcp" x="536" y="256" width="268" height="136" rx="5"/>
+      <text class="svc" x="548" y="276">GEMINI ON VERTEX AI</text>
+      <text class="title" x="548" y="298">Intervention agent</text>
+      <text class="sub" x="548" y="318">Script-aware adaptive questions in the</text>
+      <text class="sub" x="548" y="336">customer's language. Re-scores on each</text>
+      <text class="sub" x="548" y="354">answer. Offers trusted-contact call,</text>
+      <text class="sub" x="548" y="372">cooling-off hold, or cancel. Writes case summary</text>
+
+      <rect class="box gcp" x="536" y="520" width="268" height="88" rx="5"/>
+      <text class="svc" x="548" y="540">FIRESTORE</text>
+      <text class="title" x="548" y="562">Cases, holds, conversation state</text>
+      <text class="sub" x="548" y="582">Live listeners push each turn to the</text>
+      <text class="sub" x="548" y="598">phone and to both ops consoles</text>
+
+      <!-- Data lane -->
+      <rect class="box gcp" x="852" y="96" width="280" height="118" rx="5"/>
+      <text class="svc" x="864" y="116">BIGQUERY</text>
+      <text class="title" x="864" y="138">Features and payee reputation</text>
+      <text class="sub" x="864" y="158">Customer's 90-day payee and amount history</text>
+      <text class="sub" x="864" y="176">Payee fan-in across our own book: first seen,</text>
+      <text class="sub" x="864" y="194">first-time payers in 24 h. Labelled outcomes</text>
+
+      <rect class="box sim" x="852" y="240" width="280" height="86" rx="5"/>
+      <text class="svc" x="864" y="260">SIMULATED · EXTERNAL</text>
+      <text class="title" x="864" y="282">Registry lookups</text>
+      <text class="sub" x="864" y="302">I4C Suspect Registry · DoT risk indicator</text>
+      <text class="sub" x="864" y="318">NPCI beneficiary signals. Stub returns real shapes</text>
+
+      <rect class="box gcp" x="852" y="352" width="280" height="100" rx="5"/>
+      <text class="svc" x="864" y="372">VERTEX AI SEARCH</text>
+      <text class="title" x="864" y="394">Scam script library</text>
+      <text class="sub" x="864" y="414">Digital arrest, parcel, KYC expiry, investment</text>
+      <text class="sub" x="864" y="432">group, task fraud; RBI and I4C advisories</text>
+
+      <rect class="box gcp" x="852" y="520" width="280" height="88" rx="5"/>
+      <text class="svc" x="864" y="540">FIREBASE HOSTING + AUTH</text>
+      <text class="title" x="864" y="562">Fraud ops console</text>
+      <text class="sub" x="864" y="582">Live event stream, case queue, mark outcome,</text>
+      <text class="sub" x="864" y="598">blocklist payee, file I4C report</text>
+
+      <!-- flows -->
+      <!-- 1 app -> payment api -->
+      <path class="flow" d="M236 150 L284 150"/>
+      <circle class="step" cx="260" cy="134" r="10"/><text class="step-n" x="260" y="138">1</text>
+      <!-- sdk -> app (context attached) -->
+      <path class="flow" d="M134 236 L134 214"/>
+      <!-- 2 payment api -> pubsub -> scorer -->
+      <path class="flow" d="M386 214 L386 256"/>
+      <path class="flow" d="M420 295 L512 295 L512 150 L536 150"/>
+      <circle class="step" cx="512" cy="220" r="10"/><text class="step-n" x="512" y="224">2</text>
+      <!-- 3 scorer <-> bigquery, scorer -> registry stub -->
+      <path class="flow" d="M804 150 L852 150"/>
+      <path class="flow" d="M852 170 L804 170"/>
+      <path class="flow back" d="M804 196 L828 196 L828 283 L852 283"/>
+      <circle class="step" cx="828" cy="134" r="10"/><text class="step-n" x="828" y="138">3</text>
+      <!-- 4 scorer -> agent -->
+      <path class="flow hold" d="M670 214 L670 256"/>
+      <circle class="step" cx="690" cy="235" r="10"/><text class="step-n" x="690" y="239">4</text>
+      <!-- 5 agent <-> search -->
+      <path class="flow" d="M804 368 L852 368"/>
+      <path class="flow" d="M852 388 L804 388"/>
+      <circle class="step" cx="828" cy="352" r="10"/><text class="step-n" x="828" y="356">5</text>
+      <!-- 6 agent -> app conversation (via payment api) -->
+      <path class="flow hold" d="M536 340 L386 340 L386 342"/>
+      <path class="flow hold" d="M284 190 L260 190 L260 420 L134 420 L134 354"/>
+      <circle class="step" cx="450" cy="358" r="10"/><text class="step-n" x="450" y="362">6</text>
+      <!-- trusted contact -->
+      <path class="flow hold" d="M134 420 L134 520"/>
+      <!-- 7 decision -> cloud sql -> ops -->
+      <path class="flow" d="M670 392 L670 520"/>
+      <circle class="step" cx="690" cy="456" r="10"/><text class="step-n" x="690" y="460">7</text>
+      <path class="flow" d="M804 564 L852 564"/>
+      <!-- 8 ops outcome -> bigquery (feedback) -->
+      <path class="flow back" d="M1100 520 L1100 496 L1148 496 L1148 180 L1132 180"/>
+      <circle class="step" cx="1148" cy="440" r="10"/><text class="step-n" x="1148" y="444">8</text>
+      <text class="sub" x="1000" y="474">case.resolved</text>
+      <text class="sub" x="1000" y="490">via Pub/Sub</text>
+
+      <!-- Bank B band -->
+      <rect class="lane" x="16" y="668" width="1148" height="212" rx="6"/>
+      <text class="lane-label" x="28" y="690">Bank B · receiving bank · same stack, receiver feature set</text>
+
+      <rect class="box gcp" x="32" y="712" width="204" height="118" rx="5"/>
+      <text class="svc" x="44" y="732">FIREBASE HOSTING + AUTH</text>
+      <text class="title" x="44" y="754">Bank B ops console</text>
+      <text class="sub" x="44" y="774">High band: hold inflows 24 h,</text>
+      <text class="sub" x="44" y="792">freeze credit before cash-out,</text>
+      <text class="sub" x="44" y="810">review account, file I4C report</text>
+
+      <rect class="box gcp" x="284" y="712" width="204" height="118" rx="5"/>
+      <text class="svc" x="296" y="732">CLOUD RUN</text>
+      <text class="title" x="296" y="754">Bank B Payment API</text>
+      <text class="sub" x="296" y="774">Answers address validation with</text>
+      <text class="sub" x="296" y="792">name + risk band. On credit,</text>
+      <text class="sub" x="296" y="810">applies the hold if band is High</text>
+
+      <rect class="box gcp" x="536" y="712" width="268" height="118" rx="5"/>
+      <text class="svc" x="548" y="732">CLOUD RUN</text>
+      <text class="title" x="548" y="754">Receiver scorer</text>
+      <text class="sub" x="548" y="774">Same service, receiver features: account age,</text>
+      <text class="sub" x="548" y="792">KYC depth, first-time inflow fan-in, minutes</text>
+      <text class="sub" x="548" y="810">to sweep-out. Emits Low / Elevated / High</text>
+
+      <rect class="box gcp" x="852" y="712" width="280" height="118" rx="5"/>
+      <text class="svc" x="864" y="732">BIGQUERY</text>
+      <text class="title" x="864" y="754">Bank B account features</text>
+      <text class="sub" x="864" y="774">Rakesh Kumar: opened 9 days ago,</text>
+      <text class="sub" x="864" y="792">12 first-time inflows today, each swept</text>
+      <text class="sub" x="864" y="810">out within 20 min. Synthetic mule set</text>
+
+      <!-- 9 address validation: Bank A Payment API <-> NPCI leg <-> Bank B Payment API -->
+      <path class="flow both" d="M456 214 L456 287 A8 8 0 0 1 456 303 L456 332 A8 8 0 0 1 456 348 L456 520"/>
+      <path class="flow both" d="M456 608 L456 712"/>
+      <circle class="step" cx="478" cy="440" r="10"/><text class="step-n" x="478" y="444">9</text>
+      <!-- 10 Bank B API <-> receiver scorer -->
+      <path class="flow" d="M488 760 L536 760"/>
+      <path class="flow" d="M536 780 L488 780"/>
+      <circle class="step" cx="512" cy="744" r="10"/><text class="step-n" x="512" y="748">10</text>
+      <!-- 11 scorer <-> Bank B BigQuery -->
+      <path class="flow" d="M804 760 L852 760"/>
+      <path class="flow" d="M852 780 L804 780"/>
+      <circle class="step" cx="828" cy="744" r="10"/><text class="step-n" x="828" y="748">11</text>
+      <!-- 12 scorer -> Bank B ops -->
+      <path class="flow hold" d="M670 830 L670 858 L134 858 L134 830"/>
+      <circle class="step" cx="400" cy="858" r="10"/><text class="step-n" x="400" y="862">12</text>
+    </svg>
+  </div>
+
+  <div class="legend">
+    <div><span class="k">1</span><span>App sends the pay request. The SDK attaches device context in the same call.</span></div>
+    <div><span class="k">2</span><span>Payment API publishes the event, including the receiver band from step 9, and waits on the hook with a hard 200 ms budget.</span></div>
+    <div><span class="k">3</span><span>Scorer pulls the customer's 90-day history and the payee's fan-in across the bank's own customers from BigQuery, queries the registry stub (I4C Suspect Registry, DoT Fraud Risk Indicator), then scores with a weighted model inside the service. Gemini names the suspected script from the signal pattern.</span></div>
+    <div><span class="k">4</span><span>Medium and above hand off to the Gemini agent with the suspected script attached. Low returns allow immediately.</span></div>
+    <div><span class="k">5</span><span>The agent grounds its questions in the matching scam script and current RBI advisories.</span></div>
+    <div><span class="k">6</span><span>Conversation streams to the phone through the Payment API. Each answer re-scores. Hold, cancel, or trusted-contact call.</span></div>
+    <div><span class="k">7</span><span>Decision, transcript and signals persist to Firestore. Live listeners update the phone and the ops console without polling.</span></div>
+    <div><span class="k">8</span><span>Ops marks the outcome. It flows back to BigQuery as training labels; confirmed scam payees go on the bank's blocklist for every customer and are reported to I4C.</span></div>
+    <div><span class="k">9</span><span>Runs first, when the payee is resolved. Bank A asks Bank B to validate the VPA, as every UPI app does today for the name. Bank B answers with the name and a risk band. In the demo this is a direct HTTP call standing in for the NPCI leg.</span></div>
+    <div><span class="k">10</span><span>Bank B's Payment API asks its receiver scorer for the current band on the account, and later tells it when a credit arrives so a High-band hold can be applied.</span></div>
+    <div><span class="k">11</span><span>Receiver scorer reads the account's age, KYC depth, first-time inflow fan-in and sweep-out speed from Bank B's BigQuery, scores with the same service using receiver features.</span></div>
+    <div><span class="k">12</span><span>High-band accounts surface in Bank B's ops console with a 24-hour inflow hold, account review and I4C report.</span></div>
+  </div>
+
+  <h2 style="max-width:72ch">Build split for the prototype</h2>
+  <p class="col">The submission asks how the build uses Firebase, Firestore, Cloud Run and Gemini, and the prototype has to stay up and clickable for the whole evaluation window. That rules out anything always-on and expensive, so there is no custom Vertex AI endpoint; the coercion score is a weighted model inside the Cloud Run service and Gemini does the reasoning.</p>
+  <div class="two">
+    <div class="card">
+      <h3>Must ship</h3>
+      <ul>
+        <li><b>Cloud Run</b>: two services from one codebase, <code>bank-a</code> and <code>bank-b</code>. Payment API, scorer, Gemini agent, address-validation and credit endpoints. Keep one minimum instance each so a judge never hits a cold start.</li>
+        <li><b>Firestore</b>: customers, payees, 90-day history, Bank B accounts, cases, holds and conversation turns. Live listeners drive the phone screen and both consoles. Seed script in the repo.</li>
+        <li><b>Firebase Hosting + Auth</b>: the mock bank app and the two ops consoles as static web apps. Consoles behind a demo login whose credentials are printed on the landing page for judges.</li>
+        <li><b>Gemini on Vertex AI</b>: names the scam script from the signal pattern, runs the intervention conversation with a system prompt per script, writes the case summary. Scam scripts and RBI advisories live in the prompt context for the prototype.</li>
+        <li><b>Bank B</b> as the second Cloud Run deployment with receiver features, a seeded set of synthetic mule and normal accounts, and the band-sharing endpoint.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>If time allows</h3>
+      <ul>
+        <li><b>BigQuery</b> as the analytics copy of history and outcomes, with the fan-in query shown live in the video.</li>
+        <li><b>Pub/Sub</b> for <code>payment.initiated</code> feeding the console event stream and <code>case.resolved</code> feeding BigQuery. The hook itself stays a synchronous call.</li>
+        <li><b>Vertex AI Search</b> over the scam script corpus, replacing the in-prompt scripts.</li>
+        <li><b>Hindi</b> conversation turns, with English shown alongside. Not in the prototype; one screenshot in the deck.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Simulated, and said out loud</h3>
+      <ul>
+        <li><b>Device signals.</b> The mock app has toggles for active call, remote-access app, and payee age. In production the SDK reads these with Android permissions; iOS loses the call signal.</li>
+        <li><b>Registry lookups.</b> I4C Suspect Registry and DoT Fraud Risk Indicator are stubbed with their real request and response shapes. A payer bank never sees the receiver's account for a transfer to another bank, so fan-in on our own book plus these registries are the only receiver-side signals available. Same-bank transfers get the full receiver record.</li>
+        <li><b>Trusted-contact call.</b> A phone on stage rings via a webhook, not a telephony integration.</li>
+        <li><b>UPI rails.</b> Nothing is sent to NPCI. The Payment API prints "sent to NPCI" on allow, and the credit to Bank B is a direct call between the two deployments.</li>
+        <li><b>Receiver band in address validation.</b> Bank A calls Bank B directly over HTTP standing in for the NPCI name-lookup leg. The extra band field is a proposal, not a live NPCI specification, and the pitch says so.</li>
+        <li><b>Labelled data.</b> The launch model leans on script matching and heuristics; the retraining loop is shown, not yet proven.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="max-width:72ch">Three-person work split</h3>
+  <div class="two">
+    <div class="card"><h3>Edge and app</h3><p class="note">Mock bank app, SDK toggles, Payment API with the 200 ms hook contract, Pub/Sub wiring, the on-stage phone.</p></div>
+    <div class="card"><h3>Decision</h3><p class="note">BigQuery schema and synthetic data for both banks, feature queries, Vertex AI model with payer and receiver feature sets, scorer service, tier and band logic, the Bank B deployment.</p></div>
+    <div class="card"><h3>Agent and ops</h3><p class="note">Gemini prompts per script, conversation turns through Firestore, both ops consoles on Firebase Hosting, the video, the pitch deck.</p></div>
+  </div>
+
+  <h2 style="max-width:72ch">Submission checklist</h2>
+  <p class="col">Five things go in the form. Each one is checked against the rules the organisers published.</p>
+  <div class="two">
+    <div class="card">
+      <h3>Deployed prototype link</h3>
+      <ul>
+        <li>Public URL on Firebase Hosting or Cloud Run. No sign-up wall; demo credentials for the consoles printed on the landing page.</li>
+        <li>Scenario presets so a judge reproduces the video in under a minute.</li>
+        <li>Minimum instances set, Gemini quota checked, billing alerts on. No retries are granted if it is down during evaluation.</li>
+        <li>A health page that shows each service responding, so a judge can see it is alive.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Demo video, 3 to 4 minutes</h3>
+      <ul>
+        <li>Follow the arc above; it lands at 3:30. Over 4:00 is penalised, under 3:00 is not accepted.</li>
+        <li>Show the working app for most of the runtime. Slides only for the hook and the architecture beat.</li>
+        <li>Record with the deployed URL visible in the browser bar, not localhost.</li>
+        <li>Upload as unlisted or public on YouTube and test the link in a private window.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>GitHub repository, public</h3>
+      <ul>
+        <li>README with the one-paragraph description, architecture diagram, how each Google service is used, and deploy steps.</li>
+        <li>Seed script, Gemini prompts, and the signal weights in the repo, no secrets. Keys via environment and Secret Manager.</li>
+        <li>Suggested layout: <code>services/bank</code> (one codebase, two configs), <code>web/app</code>, <code>web/console</code>, <code>seed/</code>, <code>docs/</code>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Pitch deck PDF and description</h3>
+      <ul>
+        <li>Deck must use the organisers' template; off-template decks can be disqualified. Export to PDF under 5 MB.</li>
+        <li>The description field allows 1,024 characters and must name Firebase, Firestore, Cloud Run and Gemini. Draft below, at 1,001 characters.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="max-width:72ch">Description draft (1,001 characters)</h3>
+  <div class="card" style="max-width:72ch">
+    <p class="note" id="desc-text" style="margin:0; color:var(--fg)">Second Voice is a coercion-aware payment interruptor for UPI. Fraud systems ask: is this the account holder? In digital-arrest and investment scams the answer is yes: the victim authorises the payment under coercion, so rules see nothing. Our hook runs in the payer bank's authorisation path before the debit. It combines payer-side signals (new payee, amount vs 90-day history, active call, remote-access app) with payee reputation from the bank's own book and a risk band shared by the receiving bank. Gemini matches the pattern to a known scam script and runs an adaptive intervention conversation, not a banner, offering a hold and a trusted-contact call. The receiving bank runs the same stack to score its own accounts and hold suspicious inflows. Cloud Run hosts the payment APIs, scorers and Gemini agent for both banks. Firestore stores cases, holds and conversation state, with live listeners driving the phone UI and ops consoles. Firebase Hosting and Auth serve the demo app and consoles.</p>
+  </div>
+</div>
