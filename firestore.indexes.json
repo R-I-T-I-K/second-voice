@@ -4,24 +4,88 @@
       "collectionGroup": "transactions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "payee_vpa", "order": "ASCENDING" },
-        { "fieldPath": "at", "order": "DESCENDING" }
+        {
+          "fieldPath": "payee_vpa",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "transactions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "customer_id", "order": "ASCENDING" },
-        { "fieldPath": "at", "order": "DESCENDING" }
+        {
+          "fieldPath": "customer_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "cases",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "DESCENDING" }
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "customer_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "payee_vpa",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "customer_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "payee_vpa",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],

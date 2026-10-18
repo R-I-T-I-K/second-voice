@@ -50,6 +50,13 @@ Gemini runs in `stub` mode by default so the whole flow works offline. Set
 `GEMINI_MODE=vertex` plus `GOOGLE_CLOUD_PROJECT` after
 `gcloud auth application-default login` to use the real model.
 
+## Live prototype
+
+- App: https://fabled-ray-512016-k5.web.app/app
+- Bank A console: https://fabled-ray-512016-k5.web.app/console-a
+- Bank B console: https://fabled-ray-512016-k5.web.app/console-b
+- Services: `bank-a` and `bank-b` on Cloud Run, asia-south1 (see `/health` on each)
+
 ## Deploy
 
 See `scripts/deploy.sh`. Needs `gcloud` and `firebase` logged in and a project

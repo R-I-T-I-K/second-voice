@@ -19,9 +19,22 @@ gcloud firestore databases create --location="$REGION" 2>/dev/null || true
 
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
 SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-for role in roles/aiplatform.user roles/datastore.user; do
+# Runtime roles (Gemini, Firestore) plus the roles Cloud Build needs to build from
+# source on a new project, where the default compute SA no longer has Editor.
+for role in roles/aiplatform.user roles/datastore.user roles/cloudbuild.builds.builder \
+            roles/storage.objectViewer roles/artifactregistry.writer roles/logging.logWriter; do
   gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role="$role" --quiet >/dev/null
 done
+
+# Firebase on the project, a web app, and anonymous sign-in (the browser pages use it).
+firebase projects:addfirebase "$PROJECT" >/dev/null 2>&1 || true
+gcloud services enable identitytoolkit.googleapis.com >/dev/null
+TOKEN=$(gcloud auth print-access-token)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: $PROJECT" -H "content-type: application/json" \
+  "https://identitytoolkit.googleapis.com/v2/projects/$PROJECT/identityPlatform:initializeAuth" -d '{}' >/dev/null || true
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: $PROJECT" -H "content-type: application/json" \
+  "https://identitytoolkit.googleapis.com/admin/v2/projects/$PROJECT/config?updateMask=signIn.anonymous.enabled" \
+  -d '{"signIn":{"anonymous":{"enabled":true}}}' >/dev/null
 
 COMMON="GOOGLE_CLOUD_PROJECT=$PROJECT,GEMINI_MODE=vertex,GEMINI_MODEL=$GEMINI_MODEL,GEMINI_LOCATION=$GEMINI_LOCATION"
 
@@ -41,7 +54,9 @@ echo "== updating bank-b -> peer $A_URL"
 gcloud run services update bank-b --region "$REGION" --update-env-vars "PEER_BANK_URL=$A_URL" --quiet >/dev/null
 
 echo "== writing web config"
-WEB_CFG=$(firebase apps:sdkconfig web --project "$PROJECT" 2>/dev/null | sed -n '/{/,/}/p' || true)
+APP=$(firebase apps:list WEB --project "$PROJECT" --json 2>/dev/null | python3 -c 'import sys,json; r=json.load(sys.stdin)["result"]; print(r[0]["appId"] if r else "")')
+[ -n "$APP" ] || { firebase apps:create WEB "Second Voice" --project "$PROJECT" >/dev/null; APP=$(firebase apps:list WEB --project "$PROJECT" --json | python3 -c 'import sys,json; print(json.load(sys.stdin)["result"][0]["appId"])'); }
+WEB_CFG=$(firebase apps:sdkconfig WEB "$APP" --project "$PROJECT" --json 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin)["result"]["sdkConfig"]; print(json.dumps({k:d[k] for k in ("apiKey","authDomain","projectId","storageBucket","messagingSenderId","appId") if k in d}))' || true)
 if [ -z "$WEB_CFG" ]; then
   echo "!! could not read the Firebase web config. Create a web app in the Firebase console, then paste its"
   echo "   config object into web/public/shared/config.js (see config.example.js) and re-run: firebase deploy --only hosting"
@@ -65,4 +80,3 @@ echo "bank-b  $B_URL/health"
 echo "web     https://$PROJECT.web.app/app"
 echo
 echo "Seed the live database:  GOOGLE_CLOUD_PROJECT=$PROJECT uv run --project services/bank python seed/seed.py"
-echo "Enable Anonymous sign-in: Firebase console -> Authentication -> Sign-in method -> Anonymous"
