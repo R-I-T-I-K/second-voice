@@ -26,7 +26,7 @@ WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
 LINKS = {
     "github": "https://github.com/R-I-T-I-K/second-voice",
-    "video": "Demo video link: to be added after upload",
+    "video": "https://youtu.be/sW3pTCYTcHA",
     "product": "https://fabled-ray-512016-k5.web.app/",
 }
 
