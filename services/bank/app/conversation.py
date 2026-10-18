@@ -27,6 +27,22 @@ def start(case_ref, case: dict) -> dict:
     return turn
 
 
+def _with_fixed_options(options: list[dict], assessment: str) -> list[dict]:
+    """Gemini may propose its own buttons, but the app relies on a few fixed ids.
+    A held payment always offers the trusted-contact call, cancel and the
+    override; any open conversation always offers cancel."""
+    opts = [o for o in options if isinstance(o, dict) and o.get("id") and o.get("label")]
+    ids = {o["id"] for o in opts}
+    if assessment in ("hold", "continue") and "cancel" not in ids:
+        opts.append({"id": "cancel", "label": "Cancel the payment"})
+    if assessment == "hold":
+        if "trusted_contact" not in ids:
+            opts.insert(0, {"id": "trusted_contact", "label": "Call my trusted contact"})
+        if "proceed_anyway" not in ids:
+            opts.append({"id": "proceed_anyway", "label": "Proceed anyway"})
+    return opts[:4]
+
+
 def answer(case_ref, text: str | None, option: str | None) -> dict:
     case = case_ref.get().to_dict()
     turns = _turns(case_ref)
@@ -41,7 +57,8 @@ def answer(case_ref, text: str | None, option: str | None) -> dict:
                               "talk_to_bank": "talk_to_bank", "proceed_anyway": "override"}[option])
 
     turn = gemini.next_turn(case, turns, customer_input)
-    _add_turn(case_ref, n + 1, "agent", turn["message"], turn.get("options", []), turn.get("reason"))
+    turn["options"] = _with_fixed_options(turn.get("options", []), turn.get("assessment", "continue"))
+    _add_turn(case_ref, n + 1, "agent", turn["message"], turn["options"], turn.get("reason"))
     new_score = round(min(max(case["score"] + float(turn.get("coercion_delta", 0)), 0.0), 0.999), 3)
     update = {"score_after_conversation": new_score, "updated_at": db.now()}
     if turn["assessment"] == "release":
@@ -81,10 +98,14 @@ def act(case_ref, action: str) -> dict:
         _finish(case_ref)
         return {"status": "cancelled", "message": msg}
     if action == "override":
-        started = case.get("hold_started_at") or case.get("created_at")
-        waited = (db.now() - started).total_seconds()
+        first_try = case.get("override_requested_at")
+        if first_try is None:
+            case_ref.set({"override_requested_at": db.now()}, merge=True)
+            waited = 0.0
+        else:
+            waited = (db.now() - first_try).total_seconds()
         if waited < config.COOLING_OFF_SECONDS:
-            left = int(config.COOLING_OFF_SECONDS - waited)
+            left = max(int(round(config.COOLING_OFF_SECONDS - waited)), 1)
             msg = f"You can proceed in {left} seconds. Please use that time to call someone you trust."
             _add_turn(case_ref, n, "agent", msg, [{"id": "cancel", "label": "Cancel the payment"},
                                                  {"id": "proceed_anyway", "label": "Proceed anyway"}], "cooling-off")
